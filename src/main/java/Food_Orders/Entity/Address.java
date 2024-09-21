@@ -31,5 +31,5 @@ public class Address {
     @JoinColumn(name = "cart_id") // Foreign key
     private Cart cart;
 
-    // Getters and Setters
+
 }

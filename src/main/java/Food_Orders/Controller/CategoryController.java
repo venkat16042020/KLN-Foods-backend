@@ -23,11 +23,9 @@ public class CategoryController {
     @Autowired
     private CategoryRepository categoryRepository;
 
-    // Path where images will be saved
+
     private static final String uploadDirectory = System.getProperty("user.dir") + "/uploads";
 
-    // Create a new category
-    // Create a new category with image URL
     @PostMapping("/create")
     public ResponseEntity<Category> createCategory(
             @RequestParam("name") String name,
@@ -37,7 +35,7 @@ public class CategoryController {
             Category category = new Category();
             category.setName(name);
             category.setDescription(description);
-            category.setImageUrl(imageUrl); // Directly set the image URL
+            category.setImageUrl(imageUrl);
 
             Category savedCategory = categoryRepository.save(category);
             return ResponseEntity.ok(savedCategory);
@@ -46,21 +44,21 @@ public class CategoryController {
         }
     }
 
-    // Get all categories
+
     @GetMapping("all")
     public ResponseEntity<List<Category>> getAllCategories() {
         List<Category> categories = categoryRepository.findAll();
         return ResponseEntity.ok(categories);
     }
 
-    // Get category by ID
+
     @GetMapping("/{id}")
     public ResponseEntity<Category> getCategoryById(@PathVariable Long id) {
         Optional<Category> category = categoryRepository.findById(id);
         return category.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // Update an existing category
+
     @PutMapping("/update/{id}")
     public ResponseEntity<Category> updateCategory(
             @PathVariable Long id,
@@ -86,16 +84,16 @@ public class CategoryController {
         }
     }
 
-    // Delete category by ID
+
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
         categoryRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 
-    // Helper method to save the image
+
     private String saveImage(MultipartFile imageFile) throws Exception {
-        // Ensure the directory exists
+
         Path imagePath = Paths.get(uploadDirectory);
         if (!Files.exists(imagePath)) {
             Files.createDirectories(imagePath);
@@ -104,7 +102,7 @@ public class CategoryController {
         String fileName = imageFile.getOriginalFilename();
         Path filePath = imagePath.resolve(fileName);
         Files.write(filePath, imageFile.getBytes());
-        return filePath.toString(); // Return the image file path as the image URL
+        return filePath.toString();
     }
 }
 

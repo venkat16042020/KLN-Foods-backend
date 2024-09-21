@@ -18,7 +18,7 @@ public class FoodController {
     @Autowired
     private FoodRepository foodRepository;
 
-    // Create a new food item
+
     @PostMapping("/create")
     public ResponseEntity<Food> createFood(@RequestBody Food food) {
         try {
@@ -30,7 +30,7 @@ public class FoodController {
         }
     }
 
-    // Get all food items
+
     @GetMapping("/all")
     public ResponseEntity<List<Food>> getAllFoods() {
         try {
@@ -42,7 +42,7 @@ public class FoodController {
         }
     }
 
-    // Get a food item by ID
+
     @GetMapping("/{id}")
     public ResponseEntity<Object> getFoodById(@PathVariable Long id) {
         try {
@@ -58,7 +58,7 @@ public class FoodController {
         }
     }
 
-    // Update an existing food item
+
     @PutMapping("/update/{id}")
     public ResponseEntity<?> updateFood(@PathVariable Long id, @RequestBody Food updatedFood) {
         try {
@@ -86,7 +86,7 @@ public class FoodController {
         }
     }
 
-    // Delete a food item by ID
+
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<?> deleteFood(@PathVariable Long id) {
         try {

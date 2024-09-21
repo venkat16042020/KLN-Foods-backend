@@ -17,7 +17,7 @@ public class RestaurantController {
     @Autowired
     private RestaurantRepository restaurantRepository;
 
-    // Get all restaurants
+
     @GetMapping("/all")
     public ResponseEntity<List<Restaurant>> getAllRestaurants() {
         return ResponseEntity.ok(restaurantRepository.findAll());
@@ -31,7 +31,7 @@ public class RestaurantController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // Create a new restaurant
+
     @PostMapping("/create")
     public ResponseEntity<Restaurant> createRestaurant(
             @RequestParam("name") String name,
@@ -43,9 +43,9 @@ public class RestaurantController {
             Restaurant restaurant = new Restaurant();
             restaurant.setName(name);
             restaurant.setDescription(description);
-            restaurant.setPhoneNumber(phoneNumber); // Set the phone number
-            restaurant.setOpeningHours(openingHours); // Set the opening hours
-            restaurant.setImageUrl(imageUrl); // Set the image URL
+            restaurant.setPhoneNumber(phoneNumber);
+            restaurant.setOpeningHours(openingHours);
+            restaurant.setImageUrl(imageUrl);
 
             Restaurant savedRestaurant = restaurantRepository.save(restaurant);
             return ResponseEntity.ok(savedRestaurant);
@@ -55,7 +55,7 @@ public class RestaurantController {
     }
 
 
-    // Update a restaurant
+
     @PutMapping("/{id}")
     public ResponseEntity<Restaurant> updateRestaurant(@PathVariable Long id, @RequestBody Restaurant updatedRestaurant) {
         return restaurantRepository.findById(id)
@@ -71,7 +71,7 @@ public class RestaurantController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // Delete a restaurant
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Object> deleteRestaurant(@PathVariable Long id) {
         return restaurantRepository.findById(id)

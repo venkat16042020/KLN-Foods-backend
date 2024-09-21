@@ -14,6 +14,6 @@ public class CartItemDto {
     private Integer quantity;
     private Double totalGST;
 
-    // Getters and setters
+
 }
 

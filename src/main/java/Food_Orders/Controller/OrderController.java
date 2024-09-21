@@ -35,12 +35,12 @@ public class OrderController {
     @PostMapping("/placeOrder")
     public ResponseEntity<String> placeOrder(@RequestBody OrderRequest orderRequest) {
         try {
-            // Create a new Cart
+
             Cart cart = new Cart();
             cart.setTotalAmount(orderRequest.getTotalAmount()); // Set total amount
             Cart savedCart = cartRepository.save(cart);
 
-            // Add Cart Items
+
             for (CartItemDto itemDto : orderRequest.getItems()) {
                 CartItem cartItem = new CartItem();
                 cartItem.setCart(savedCart);

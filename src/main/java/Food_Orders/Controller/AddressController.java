@@ -18,28 +18,28 @@ public class AddressController {
     @Autowired
     private AddressService addressService;
 
-    // Create a new address
+
     @PostMapping("add")
     public ResponseEntity<Address> createAddress(@RequestBody Address address) {
         Address createdAddress = addressService.saveAddress(address);
         return new ResponseEntity<>(createdAddress, HttpStatus.CREATED);
     }
 
-    // Get all addresses
+
     @GetMapping("all")
     public ResponseEntity<List<Address>> getAllAddresses() {
         List<Address> addresses = addressService.getAllAddresses();
         return ResponseEntity.ok(addresses);
     }
 
-    // Get an address by ID
+
     @GetMapping("/{id}")
     public ResponseEntity<Address> getAddressById(@PathVariable Long id) {
         Optional<Address> address = addressService.getAddressById(id);
         return address.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // Update an existing address
+
     @PutMapping("/{id}")
     public ResponseEntity<Address> updateAddress(
             @PathVariable Long id,
@@ -62,7 +62,7 @@ public class AddressController {
         }
     }
 
-    // Delete an address by ID
+
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteAddress(@PathVariable Long id) {
         Optional<Address> addressOptional = addressService.getAddressById(id);

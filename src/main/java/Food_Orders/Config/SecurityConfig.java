@@ -15,7 +15,7 @@ public class SecurityConfig {
     public HttpFirewall httpFirewall() {
         StrictHttpFirewall firewall = new StrictHttpFirewall();
         firewall.setAllowUrlEncodedSlash(true); // Allows encoded slashes in URLs
-        firewall.setAllowSemicolon(true); // Allows semicolons in URLs, if necessary
+        firewall.setAllowSemicolon(true);
         return firewall;
     }
 
@@ -30,6 +30,6 @@ public class SecurityConfig {
 
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer(HttpFirewall httpFirewall) {
-        return (web) -> web.httpFirewall(httpFirewall); // Apply the custom firewall here
+        return (web) -> web.httpFirewall(httpFirewall);
     }
 }
