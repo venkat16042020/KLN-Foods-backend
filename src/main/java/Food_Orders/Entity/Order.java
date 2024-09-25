@@ -1,40 +1,48 @@
 package Food_Orders.Entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-import java.util.List;
-
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
 @Entity
-@Table(name = "Orders")
+@Table(name = "PaymentOrders")
 public class Order {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    private double amount; // In your preferred currency
+    private String transactionId;
+    private String status;
 
+    // Getters and Setters
+    public Long getId() {
+        return id;
+    }
 
-    @JsonIgnore
-    @ManyToOne
-    private Restaurant restaurant;
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    private Long totalAmount;
+    public double getAmount() {
+        return amount;
+    }
 
-    private String orderStatus;
+    public void setAmount(double amount) {
+        this.amount = amount;
+    }
 
-    @ManyToOne
-    private Address deliveryAddress;
+    public String getTransactionId() {
+        return transactionId;
+    }
 
-    @OneToMany
-    private List<OrderItem> items;
+    public void setTransactionId(String transactionId) {
+        this.transactionId = transactionId;
+    }
 
-    private int totalItems;
-    private int totalPrice;
+    public String getStatus() {
+        return status;
+    }
 
-
+    public void setStatus(String status) {
+        this.status = status;
+    }
 }

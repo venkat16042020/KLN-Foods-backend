@@ -1,115 +1,50 @@
 package Food_Orders.Controller;
 
-import Food_Orders.Dto.CartItemDto;
-import Food_Orders.Dto.OrderRequest;
-import Food_Orders.Entity.Address;
-import Food_Orders.Entity.Cart;
-import Food_Orders.Entity.CartItem;
-import Food_Orders.Repository.AddressRepository;
-import Food_Orders.Repository.CartItemRepository;
-import Food_Orders.Repository.CartRepository;
+import com.razorpay.RazorpayClient;
+import com.razorpay.Order;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+// other imports
 
 @RestController
 @RequestMapping("/api")
 @CrossOrigin(origins = "http://localhost:3000")
 public class OrderController {
 
-    @Autowired
-    private CartRepository cartRepository;
+    // Add Razorpay Client
+    private RazorpayClient razorpayClient;
 
     @Autowired
-    private CartItemRepository cartItemRepository;
+    public OrderController() throws Exception {
+        this.razorpayClient = new RazorpayClient("rzp_test_HGl3PTqZYOKXbN", "RvOs7McAun7utYyXD9MfMMsk");
+    }
 
-    @Autowired
-    private AddressRepository addressRepository;
-
-    @PostMapping("/placeOrder")
-    public ResponseEntity<String> placeOrder(@RequestBody OrderRequest orderRequest) {
+    @PostMapping("/createOrder")
+    public ResponseEntity<Map<String, Object>> createOrder(@RequestBody Map<String, Object> orderDetails) {
         try {
+            // Create an order with Razorpay
+            JSONObject orderRequest = new JSONObject();
+            orderRequest.put("amount", orderDetails.get("totalAmount")); // Amount in paise
+            orderRequest.put("currency", "INR");
+            orderRequest.put("payment_capture", 1); // Auto-capture payment
 
-            Cart cart = new Cart();
-            cart.setTotalAmount(orderRequest.getTotalAmount()); // Set total amount
-            Cart savedCart = cartRepository.save(cart);
+            Order order = razorpayClient.orders.create(orderRequest);
+            Map<String, Object> response = new HashMap<>();
+            response.put("orderId", order.get("id"));
+            response.put("amount", order.get("amount"));
 
-
-            for (CartItemDto itemDto : orderRequest.getItems()) {
-                CartItem cartItem = new CartItem();
-                cartItem.setCart(savedCart);
-                cartItem.setName(itemDto.getName());
-                cartItem.setPrice(itemDto.getPrice());
-                cartItem.setQuantity(itemDto.getQuantity());
-                cartItem.setTotalGST(itemDto.getTotalGST());
-                cartItemRepository.save(cartItem);
-            }
-
-            // Add Address
-            Address address = new Address();
-            address.setCart(savedCart);
-            address.setHouseNumber(orderRequest.getAddress().getHouseNumber());
-            address.setLandMark(orderRequest.getAddress().getLandMark());
-            address.setStreet(orderRequest.getAddress().getStreet());
-            address.setCity(orderRequest.getAddress().getCity());
-            address.setState(orderRequest.getAddress().getState());
-            address.setZipCode(orderRequest.getAddress().getZipCode());
-            address.setPhoneNumber(orderRequest.getAddress().getPhoneNumber());
-            addressRepository.save(address);
-
-            return ResponseEntity.ok("Order placed successfully.");
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to place order.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.singletonMap("error", "Failed to create order."));
         }
     }
-    @GetMapping("/orders")
-    public ResponseEntity<List<Cart>> getAllOrders() {
-        List<Cart> orders = cartRepository.findAll();
-        return ResponseEntity.ok(orders);
-    }
-
-    @GetMapping("/orders/{id}")
-    public ResponseEntity<Cart> getOrderById(@PathVariable Long id) {
-        Optional<Cart> order = cartRepository.findById(id);
-        return order.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
-    }
-
-    @PutMapping("/orders/{id}")
-    public ResponseEntity<Cart> updateOrder(@PathVariable Long id, @RequestBody Cart updatedCart) {
-        return cartRepository.findById(id)
-                .map(cart -> {
-                    cart.setTotalAmount(updatedCart.getTotalAmount());
-                    // Update other fields as needed
-                    Cart savedCart = cartRepository.save(cart);
-                    return ResponseEntity.ok(savedCart);
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @DeleteMapping("/orders/{id}")
-    public ResponseEntity<Object> deleteOrder(@PathVariable Long id) {
-        return cartRepository.findById(id)
-                .map(cart -> {
-                    cartRepository.delete(cart);
-                    return ResponseEntity.noContent().build();
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @GetMapping("/orders/summary")
-    public ResponseEntity<Map<String, Object>> getOrderSummary() {
-        Map<String, Object> summary = new HashMap<>();
-        summary.put("totalOrders", cartRepository.count());
-        summary.put("totalSales", cartRepository.findAll().stream()
-                .mapToDouble(Cart::getTotalAmount)
-                .sum());
-        return ResponseEntity.ok(summary);
-    }
 }
+
