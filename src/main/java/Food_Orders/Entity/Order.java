@@ -9,11 +9,10 @@ public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private double amount; // In your preferred currency
+    private double amount;
     private String transactionId;
     private String status;
 
-    // Getters and Setters
     public Long getId() {
         return id;
     }

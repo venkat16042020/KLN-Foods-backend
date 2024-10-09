@@ -11,14 +11,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-// other imports
+
 
 @RestController
 @RequestMapping("/api")
 @CrossOrigin(origins = "http://localhost:3000")
 public class OrderController {
 
-    // Add Razorpay Client
+
     private RazorpayClient razorpayClient;
 
     @Autowired
@@ -31,9 +31,9 @@ public class OrderController {
         try {
             // Create an order with Razorpay
             JSONObject orderRequest = new JSONObject();
-            orderRequest.put("amount", orderDetails.get("totalAmount")); // Amount in paise
+            orderRequest.put("amount", orderDetails.get("totalAmount"));
             orderRequest.put("currency", "INR");
-            orderRequest.put("payment_capture", 1); // Auto-capture payment
+            orderRequest.put("payment_capture", 1);
 
             Order order = razorpayClient.orders.create(orderRequest);
             Map<String, Object> response = new HashMap<>();

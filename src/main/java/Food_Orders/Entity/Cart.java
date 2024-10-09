@@ -25,6 +25,6 @@ public class Cart {
     private List<CartItem> cartItems = new ArrayList<>();
 
     @Column(name = "total_amount")
-    private Double totalAmount;
+    private double totalAmount;
 
 }

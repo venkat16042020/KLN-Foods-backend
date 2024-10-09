@@ -33,14 +33,14 @@ public class CartController {
     private AddressRepository addressRepository;
 
     @PostMapping("/placeOrder")
-    public ResponseEntity<String> placeOrder(@RequestBody OrderRequest orderRequest) {
+    public ResponseEntity<Map<String, String>> placeOrder(@RequestBody OrderRequest orderRequest) {
         try {
-
+            // Create and save cart
             Cart cart = new Cart();
-            cart.setTotalAmount(orderRequest.getTotalAmount()); // Set total amount
+            cart.setTotalAmount(orderRequest.getTotalAmount());
             Cart savedCart = cartRepository.save(cart);
 
-
+            // Save cart items
             for (CartItemDto itemDto : orderRequest.getItems()) {
                 CartItem cartItem = new CartItem();
                 cartItem.setCart(savedCart);
@@ -51,7 +51,7 @@ public class CartController {
                 cartItemRepository.save(cartItem);
             }
 
-            // Add Address
+            // Save address
             Address address = new Address();
             address.setCart(savedCart);
             address.setHouseNumber(orderRequest.getAddress().getHouseNumber());
@@ -63,12 +63,19 @@ public class CartController {
             address.setPhoneNumber(orderRequest.getAddress().getPhoneNumber());
             addressRepository.save(address);
 
-            return ResponseEntity.ok("Order placed successfully.");
+            // Prepare a JSON response message
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Order placed successfully.");
+
+            return ResponseEntity.ok(response);  // Return a JSON response
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to place order.");
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", "Failed to place order.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
+
     @GetMapping("/orders")
     public ResponseEntity<List<Cart>> getAllOrders() {
         List<Cart> orders = cartRepository.findAll();
