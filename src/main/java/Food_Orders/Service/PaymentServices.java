@@ -23,9 +23,9 @@ public class PaymentServices {
     }
 
     public Payment getPaymentByTransactionId(String transactionId) {
-        // Use the custom query method defined in the PaymentRepository
         return paymentRepository.findByTransactionId(transactionId);
     }
+
 
     public Payment updatePaymentStatus(String transactionId, String status) {
         Payment payment = getPaymentByTransactionId(transactionId);
