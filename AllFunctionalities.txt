@@ -21,3 +21,4 @@ KLN1B-E00017: Feedback
 KLN1B-E00018: Discounts
 KLN1B-E00019: Offers
 KLN1B-E00020: Notifications
+India 
