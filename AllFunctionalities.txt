@@ -1,0 +1,20 @@
+kln1-E00001: Customers
+kln1-E00002: Admins
+kln1-E00003: Profiles
+kln1-E00004: Categories
+kln1-E00005: Upload and Download categories
+kln1-E00006: Items
+kln1-E00007: Upload and Download items
+kln1-E00008: Cart
+kln1-E00009: Payment
+kln1-E00010: History
+kln1-E00011: Search
+kln1-E00012: Advertisements
+kln1-E00013: ContactUs
+kln1-E00014: AboutUs
+kln1-E00015: Invoice
+kln1-E00016: Ratings
+kln1-E00017: Feedback
+kln1-E00018: Discounts
+kln1-E00019: Offers
+kln1-E00020: Notifications
