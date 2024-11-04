@@ -1,7 +1,10 @@
 kln1-E00001: Customers
+  kln1-US00001: Add Customer; kln1-US00002: Update Customer; kln1-US00003: Delete Customer; kln1-US00004: Merge Customers; kln1-US00005: Upload Customers; kln1-US00006: Download Customers
 kln1-E00002: Admins
+  kln1-US00007: Add Admin; kln1-US00008: Update Admin; kln1-US00009: Delete Admin; kln1-US00010: Merge Admins; kln1-US00011: Upload Admins; kln1-US00012: Download Admins
 kln1-E00003: Profiles
 kln1-E00004: Categories
+  kln1-US00001: Grains, Snacks, Dairy
 kln1-E00005: Upload and Download categories
 kln1-E00006: Items
 kln1-E00007: Upload and Download items
