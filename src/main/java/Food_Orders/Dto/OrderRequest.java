@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
 import java.util.List;
 @Data
 @AllArgsConstructor
@@ -14,4 +15,7 @@ public class OrderRequest {
     private Double totalAmount;
     private List<CartItemDto> items;
     private AddressDto address;
+    private String phoneNumber;
+    private String email;
+    private Date date;
 }

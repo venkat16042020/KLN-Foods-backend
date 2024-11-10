@@ -24,8 +24,7 @@ public class Address {
     private String state;
     private String zipCode;
 
-    @Column(name = "phone_number")
-    private String phoneNumber;
+
 
     @OneToOne
     @JoinColumn(name = "cart_id") // Foreign key

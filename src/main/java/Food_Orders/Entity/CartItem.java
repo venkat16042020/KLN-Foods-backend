@@ -1,15 +1,15 @@
 package Food_Orders.Entity;
 
-import Food_Orders.Entity.Cart;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
-@NoArgsConstructor
 @Data
 @Entity
+@AllArgsConstructor
+@NoArgsConstructor
 @Table(name = "CartItems")
 public class CartItem {
 
@@ -20,12 +20,11 @@ public class CartItem {
 
     @ManyToOne
     @JoinColumn(name = "cart_id")
+    @JsonBackReference
     private Cart cart;
 
     private String name;
     private Double price;
     private Integer quantity;
     private Double totalGST;
-
-
 }
