@@ -2,7 +2,11 @@ package Food_Orders.Repository;
 
 import Food_Orders.Entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import java.util.Optional;
 
+@Repository
 public interface UserRepository extends JpaRepository<User, Long> {
-    User findByEmail(String email);  // Optional: Find by email for login
+    Optional<User> findByEmail(String email);
+    
 }

@@ -1,17 +1,17 @@
 package Food_Orders.Controller;
 
-
-
 import Food_Orders.Entity.Category;
 import Food_Orders.Repository.CategoryRepository;
+import Food_Orders.Service.ExcelCategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.multipart.MultipartFile;
+import jakarta.servlet.http.HttpServletResponse;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,89 +20,88 @@ import java.util.Optional;
 @CrossOrigin(origins = "http://localhost:3000")
 public class CategoryController {
 
+    private static final Logger logger = LoggerFactory.getLogger(CategoryController.class);
+
     @Autowired
     private CategoryRepository categoryRepository;
 
+    @Autowired
+    private ExcelCategoryService excelCategoryService;
 
-    private static final String uploadDirectory = System.getProperty("user.dir") + "/uploads";
-
+    // Create a new category
     @PostMapping("/create")
     public ResponseEntity<Category> createCategory(
             @RequestParam("name") String name,
             @RequestParam("description") String description,
             @RequestParam("imageUrl") String imageUrl) {
         try {
-            Category category = new Category();
-            category.setName(name);
-            category.setDescription(description);
-            category.setImageUrl(imageUrl);
-
+            Category category = new Category(name, description, imageUrl);
             Category savedCategory = categoryRepository.save(category);
+            logger.info("Created new category with ID: {}", savedCategory.getCategory_id());
             return ResponseEntity.ok(savedCategory);
         } catch (Exception e) {
+            logger.error("Failed to create category", e);
             return ResponseEntity.badRequest().build();
         }
     }
 
-
-    @GetMapping("all")
+    // Get all categories
+    @GetMapping("/all")
     public ResponseEntity<List<Category>> getAllCategories() {
-        List<Category> categories = categoryRepository.findAll();
-        return ResponseEntity.ok(categories);
+        logger.info("Fetching all categories...");
+        try {
+            List<Category> categories = categoryRepository.findAll();
+            return ResponseEntity.ok(categories);
+        } catch (Exception e) {
+            logger.error("Error fetching categories", e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
-
+    // Get a category by ID
     @GetMapping("/{id}")
     public ResponseEntity<Category> getCategoryById(@PathVariable Long id) {
+        logger.info("Fetching category with ID: {}", id);
         Optional<Category> category = categoryRepository.findById(id);
-        return category.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
-    }
-
-
-    @PutMapping("/update/{id}")
-    public ResponseEntity<Category> updateCategory(
-            @PathVariable Long id,
-            @RequestParam("name") String name,
-            @RequestParam("description") String description,
-            @RequestParam(value = "image", required = false) MultipartFile imageFile) throws Exception {
-        Optional<Category> categoryOptional = categoryRepository.findById(id);
-        if (categoryOptional.isPresent()) {
-            Category category = categoryOptional.get();
-            category.setName(name);
-            category.setDescription(description);
-
-            if (imageFile != null && !imageFile.isEmpty()) {
-                // If a new image is provided, save it
-                String imagePath = saveImage(imageFile);
-                category.setImageUrl(imagePath);
-            }
-
-            Category updatedCategory = categoryRepository.save(category);
-            return ResponseEntity.ok(updatedCategory);
+        if (category.isPresent()) {
+            return ResponseEntity.ok(category.get());
         } else {
+            logger.warn("Category with ID {} not found", id);
             return ResponseEntity.notFound().build();
         }
     }
 
-
+    // Delete a category
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
-        categoryRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
+        logger.info("Attempting to delete category with ID: {}", id);
+        if (categoryRepository.existsById(id)) {
+            categoryRepository.deleteById(id);
+            logger.info("Deleted category with ID: {}", id);
+            return ResponseEntity.noContent().build();
+        } else {
+            logger.warn("Category with ID {} not found", id);
+            return ResponseEntity.notFound().build();
+        }
     }
 
-
-    private String saveImage(MultipartFile imageFile) throws Exception {
-
-        Path imagePath = Paths.get(uploadDirectory);
-        if (!Files.exists(imagePath)) {
-            Files.createDirectories(imagePath);
+    // Import categories from Excel file
+    @PostMapping("/import")
+    public ResponseEntity<String> importCategories(@RequestParam("file") MultipartFile file) {
+        try {
+            // Process the file (this should call a service to process the Excel file)
+            excelCategoryService.importCategoriesFromExcel(file);
+            return ResponseEntity.ok("Categories imported successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Failed to import categories: " + e.getMessage());
         }
-        // Save the file to the directory
-        String fileName = imageFile.getOriginalFilename();
-        Path filePath = imagePath.resolve(fileName);
-        Files.write(filePath, imageFile.getBytes());
-        return filePath.toString();
+    }
+
+    // Export categories to Excel file
+    @GetMapping("/export")
+    public void exportCategories(HttpServletResponse response) throws IOException {
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment; filename=categories.xlsx");
+        excelCategoryService.exportCategoriesToExcel(response);
     }
 }
-
