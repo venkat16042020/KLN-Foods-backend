@@ -1,7 +1,9 @@
 package Food_Orders.Entity;
 
 import lombok.Getter;
+import lombok.Setter;
 
+@Setter
 @Getter
 public class PaymentStatus {
     private String transactionId;
@@ -14,11 +16,4 @@ public class PaymentStatus {
     }
 
 
-    public void setTransactionId(String transactionId) {
-        this.transactionId = transactionId;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
 }

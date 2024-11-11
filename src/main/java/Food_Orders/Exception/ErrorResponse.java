@@ -1,5 +1,10 @@
 package Food_Orders.Exception;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
 public class ErrorResponse {
     private String message;
     private int statusCode;
@@ -10,19 +15,4 @@ public class ErrorResponse {
     }
 
 
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public int getStatusCode() {
-        return statusCode;
-    }
-
-    public void setStatusCode(int statusCode) {
-        this.statusCode = statusCode;
-    }
 }
