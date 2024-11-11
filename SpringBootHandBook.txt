@@ -1,3 +1,33 @@
+----APP---------------------------------
+package Food_Orders;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class FoodOrdersApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(FoodOrdersApplication.class, args);
+	}
+
+}
+-------------------APP PROPERTIES--------------------
+spring.application.name=Food-Orders
+spring.jpa.hibernate.ddl-auto=update
+spring.datasource.url=jdbc:mysql://localhost:3306/kln1Db
+spring.datasource.username=root
+spring.datasource.password=root
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.jpa.show-sql= true
+
+razorpay.key.id=rzp_test_HGl3PTqZYOKXbN
+razorpay.key.secret=RvOs7McAun7utYyXD9MfMMsk
+
+logging.level.org.hibernate.SQL=INFO
+logging.level.org.hibernate.type=INFO
+
+-------------------ENTITIES----------------------
 Entity example:
 package Food_Orders.Entity;
 
@@ -54,4 +84,1063 @@ public class PaymentStatus {
         this.transactionId = transactionId;
         this.status = status;
     }
+------------------------DATA OBJECTS-------------
+package Food_Orders.Dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class AddressDto {
+    private String houseNumber;
+    private String landMark;
+    private String street;
+    private String city;
+    private String state;
+    private String zipCode;
+    private String phoneNumber;
+}
+---------------------------API METHODS: POST, GET, PUT, DELETE--------------------
+package Food_Orders.Controller;
+
+import Food_Orders.Entity.Address;
+import Food_Orders.Service.AddressService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/addresses")
+@CrossOrigin(origins = "http://localhost:3000")
+public class AddressController {
+
+    @Autowired
+    private AddressService addressService;
+
+
+    @PostMapping("add")
+    public ResponseEntity<Address> createAddress(@RequestBody Address address) {
+        Address createdAddress = addressService.saveAddress(address);
+        return new ResponseEntity<>(createdAddress, HttpStatus.CREATED);
+    }
+
+
+    @GetMapping("all")
+    public ResponseEntity<List<Address>> getAllAddresses() {
+        List<Address> addresses = addressService.getAllAddresses();
+        return ResponseEntity.ok(addresses);
+    }
+
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Address> getAddressById(@PathVariable Long id) {
+        Optional<Address> address = addressService.getAddressById(id);
+        return address.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Address> updateAddress(
+            @PathVariable Long id,
+            @RequestBody Address address) {
+
+        Optional<Address> addressOptional = addressService.getAddressById(id);
+        if (addressOptional.isPresent()) {
+            Address existingAddress = addressOptional.get();
+            existingAddress.setHouseNumber(address.getHouseNumber());
+            existingAddress.setLandMark(address.getLandMark());
+            existingAddress.setStreet(address.getStreet());
+            existingAddress.setZipCode(address.getZipCode());
+            existingAddress.setCity(address.getCity());
+            existingAddress.setState(address.getState());
+
+            Address updatedAddress = addressService.saveAddress(existingAddress);
+            return ResponseEntity.ok(updatedAddress);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteAddress(@PathVariable Long id) {
+        Optional<Address> addressOptional = addressService.getAddressById(id);
+        if (addressOptional.isPresent()) {
+            addressService.deleteAddress(id);
+            return ResponseEntity.ok("Address successfully deleted.");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Address not found.");
+        }
+    }
+}
+---------------------------
+package Food_Orders.Controller;
+
+import Food_Orders.Dto.CartItemDto;
+import Food_Orders.Dto.OrderRequest;
+import Food_Orders.Entity.Address;
+import Food_Orders.Entity.Cart;
+import Food_Orders.Entity.CartItem;
+import Food_Orders.Repository.AddressRepository;
+import Food_Orders.Repository.CartItemRepository;
+import Food_Orders.Repository.CartRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/api")
+@CrossOrigin(origins = "http://localhost:3000")
+public class CartController {
+
+    @Autowired
+    private CartRepository cartRepository;
+
+    @Autowired
+    private CartItemRepository cartItemRepository;
+
+    @Autowired
+    private AddressRepository addressRepository;
+
+    @PostMapping("/placeOrder")
+    public ResponseEntity<Map<String, String>> placeOrder(@RequestBody OrderRequest orderRequest) {
+        try {
+            // Create and save cart
+            Cart cart = new Cart();
+            cart.setTotalAmount(orderRequest.getTotalAmount());
+            Cart savedCart = cartRepository.save(cart);
+
+            // Save cart items
+            for (CartItemDto itemDto : orderRequest.getItems()) {
+                CartItem cartItem = new CartItem();
+                cartItem.setCart(savedCart);
+                cartItem.setName(itemDto.getName());
+                cartItem.setPrice(itemDto.getPrice());
+                cartItem.setQuantity(itemDto.getQuantity());
+                cartItem.setTotalGST(itemDto.getTotalGST());
+                cartItemRepository.save(cartItem);
+            }
+
+            // Save address
+            Address address = new Address();
+            address.setCart(savedCart);
+            address.setHouseNumber(orderRequest.getAddress().getHouseNumber());
+            address.setLandMark(orderRequest.getAddress().getLandMark());
+            address.setStreet(orderRequest.getAddress().getStreet());
+            address.setCity(orderRequest.getAddress().getCity());
+            address.setState(orderRequest.getAddress().getState());
+            address.setZipCode(orderRequest.getAddress().getZipCode());
+            address.setPhoneNumber(orderRequest.getAddress().getPhoneNumber());
+            addressRepository.save(address);
+
+            // Prepare a JSON response message
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Order placed successfully.");
+
+            return ResponseEntity.ok(response);  // Return a JSON response
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", "Failed to place order.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    @GetMapping("/orders")
+    public ResponseEntity<List<Cart>> getAllOrders() {
+        List<Cart> orders = cartRepository.findAll();
+        return ResponseEntity.ok(orders);
+    }
+
+    @GetMapping("/orders/{id}")
+    public ResponseEntity<Cart> getOrderById(@PathVariable Long id) {
+        Optional<Cart> order = cartRepository.findById(id);
+        return order.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/orders/{id}")
+    public ResponseEntity<Cart> updateOrder(@PathVariable Long id, @RequestBody Cart updatedCart) {
+        return cartRepository.findById(id)
+                .map(cart -> {
+                    cart.setTotalAmount(updatedCart.getTotalAmount());
+                    // Update other fields as needed
+                    Cart savedCart = cartRepository.save(cart);
+                    return ResponseEntity.ok(savedCart);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/orders/{id}")
+    public ResponseEntity<Object> deleteOrder(@PathVariable Long id) {
+        return cartRepository.findById(id)
+                .map(cart -> {
+                    cartRepository.delete(cart);
+                    return ResponseEntity.noContent().build();
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/orders/summary")
+    public ResponseEntity<Map<String, Object>> getOrderSummary() {
+        Map<String, Object> summary = new HashMap<>();
+        summary.put("totalOrders", cartRepository.count());
+        summary.put("totalSales", cartRepository.findAll().stream()
+                .mapToDouble(Cart::getTotalAmount)
+                .sum());
+        return ResponseEntity.ok(summary);
+    }
+}
 -------------------------------------
+package Food_Orders.Controller;
+
+
+
+import Food_Orders.Entity.Category;
+import Food_Orders.Repository.CategoryRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/categories")
+@CrossOrigin(origins = "http://localhost:3000")
+public class CategoryController {
+
+    @Autowired
+    private CategoryRepository categoryRepository;
+
+
+    private static final String uploadDirectory = System.getProperty("user.dir") + "/uploads";
+
+    @PostMapping("/create")
+    public ResponseEntity<Category> createCategory(
+            @RequestParam("name") String name,
+            @RequestParam("description") String description,
+            @RequestParam("imageUrl") String imageUrl) {
+        try {
+            Category category = new Category();
+            category.setName(name);
+            category.setDescription(description);
+            category.setImageUrl(imageUrl);
+
+            Category savedCategory = categoryRepository.save(category);
+            return ResponseEntity.ok(savedCategory);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+
+    @GetMapping("all")
+    public ResponseEntity<List<Category>> getAllCategories() {
+        List<Category> categories = categoryRepository.findAll();
+        return ResponseEntity.ok(categories);
+    }
+
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Category> getCategoryById(@PathVariable Long id) {
+        Optional<Category> category = categoryRepository.findById(id);
+        return category.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+
+    @PutMapping("/update/{id}")
+    public ResponseEntity<Category> updateCategory(
+            @PathVariable Long id,
+            @RequestParam("name") String name,
+            @RequestParam("description") String description,
+            @RequestParam(value = "image", required = false) MultipartFile imageFile) throws Exception {
+        Optional<Category> categoryOptional = categoryRepository.findById(id);
+        if (categoryOptional.isPresent()) {
+            Category category = categoryOptional.get();
+            category.setName(name);
+            category.setDescription(description);
+
+            if (imageFile != null && !imageFile.isEmpty()) {
+                // If a new image is provided, save it
+                String imagePath = saveImage(imageFile);
+                category.setImageUrl(imagePath);
+            }
+
+            Category updatedCategory = categoryRepository.save(category);
+            return ResponseEntity.ok(updatedCategory);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
+        categoryRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+
+    private String saveImage(MultipartFile imageFile) throws Exception {
+
+        Path imagePath = Paths.get(uploadDirectory);
+        if (!Files.exists(imagePath)) {
+            Files.createDirectories(imagePath);
+        }
+        // Save the file to the directory
+        String fileName = imageFile.getOriginalFilename();
+        Path filePath = imagePath.resolve(fileName);
+        Files.write(filePath, imageFile.getBytes());
+        return filePath.toString();
+    }
+}
+--------------------------------
+package Food_Orders.Controller;
+
+
+
+import Food_Orders.Entity.Feedback;
+import Food_Orders.Repository.FeedbackRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/feedbacks")
+public class FeedbackController {
+
+    @Autowired
+    private FeedbackRepository feedbackRepository;
+
+    @PostMapping("add")
+    public ResponseEntity<Feedback> createFeedback(@RequestBody Feedback feedback) {
+        Feedback savedFeedback = feedbackRepository.save(feedback);
+        return ResponseEntity.ok(savedFeedback);
+    }
+
+    @GetMapping("all")
+    public ResponseEntity<List<Feedback>> getAllFeedbacks() {
+        List<Feedback> feedbacks = feedbackRepository.findAll();
+        return ResponseEntity.ok(feedbacks);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Feedback> getFeedbackById(@PathVariable Long id) {
+        return feedbackRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Feedback> updateFeedback(@PathVariable Long id, @RequestBody Feedback feedbackDetails) {
+        return feedbackRepository.findById(id)
+                .map(feedback -> {
+                    feedback.setEmail(feedbackDetails.getEmail());
+                    feedback.setText(feedbackDetails.getText());
+                    Feedback updatedFeedback = feedbackRepository.save(feedback);
+                    return ResponseEntity.ok(updatedFeedback);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteFeedback(@PathVariable Long id) {
+        if (feedbackRepository.existsById(id)) {
+            feedbackRepository.deleteById(id);
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.notFound().build();
+    }
+}
+-----------------------------
+package Food_Orders.Controller;
+
+import Food_Orders.Entity.Food;
+import Food_Orders.Repository.FoodRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/foods")
+@CrossOrigin(origins = "http://localhost:3000")
+public class FoodController {
+
+    @Autowired
+    private FoodRepository foodRepository;
+
+
+    @PostMapping("/create")
+    public ResponseEntity<Food> createFood(@RequestBody Food food) {
+        try {
+            Food savedFood = foodRepository.save(food);
+            return ResponseEntity.ok(savedFood);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+
+    @GetMapping("/all")
+    public ResponseEntity<List<Food>> getAllFoods() {
+        try {
+            List<Food> foods = foodRepository.findAll();
+            return ResponseEntity.ok(foods);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Object> getFoodById(@PathVariable Long id) {
+        try {
+            Optional<Food> food = foodRepository.findById(id);
+            if (food.isPresent()) {
+                return ResponseEntity.ok(food.get());
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Food item with ID " + id + " not found.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error retrieving food item: " + e.getMessage());
+        }
+    }
+
+
+    @PutMapping("/update/{id}")
+    public ResponseEntity<?> updateFood(@PathVariable Long id, @RequestBody Food updatedFood) {
+        try {
+            Optional<Food> foodOptional = foodRepository.findById(id);
+            if (foodOptional.isPresent()) {
+                Food food = foodOptional.get();
+                food.setName(updatedFood.getName());
+                food.setPrice(updatedFood.getPrice());
+                food.setStateGST(updatedFood.getStateGST());
+                food.setCentralGST(updatedFood.getCentralGST());
+                food.setTotalGST(updatedFood.getTotalGST());
+                food.setTotalPrice(updatedFood.getTotalPrice());
+                food.setDescription(updatedFood.getDescription());
+                food.setCategoryName(updatedFood.getCategoryName());
+                food.setImageUrl(updatedFood.getImageUrl());
+
+                Food savedFood = foodRepository.save(food);
+                return ResponseEntity.ok(savedFood);
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Food item not found.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error updating food item: " + e.getMessage());
+        }
+    }
+
+
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<?> deleteFood(@PathVariable Long id) {
+        try {
+            Optional<Food> foodOptional = foodRepository.findById(id);
+            if (foodOptional.isPresent()) {
+                foodRepository.deleteById(id);
+                return ResponseEntity.ok("Food item successfully deleted.");
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Food item not found.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deleting food item: " + e.getMessage());
+        }
+    }
+}
+-------------------------------------
+package Food_Orders.Controller;
+
+import com.razorpay.RazorpayClient;
+import com.razorpay.Order;
+import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+
+@RestController
+@RequestMapping("/api")
+@CrossOrigin(origins = "http://localhost:3000")
+public class OrderController {
+
+
+    private RazorpayClient razorpayClient;
+
+    @Autowired
+    public OrderController() throws Exception {
+        this.razorpayClient = new RazorpayClient("rzp_test_HGl3PTqZYOKXbN", "RvOs7McAun7utYyXD9MfMMsk");
+    }
+
+    @PostMapping("/createOrder")
+    public ResponseEntity<Map<String, Object>> createOrder(@RequestBody Map<String, Object> orderDetails) {
+        try {
+            // Create an order with Razorpay
+            JSONObject orderRequest = new JSONObject();
+            orderRequest.put("amount", orderDetails.get("totalAmount"));
+            orderRequest.put("currency", "INR");
+            orderRequest.put("payment_capture", 1);
+
+            Order order = razorpayClient.orders.create(orderRequest);
+            Map<String, Object> response = new HashMap<>();
+            response.put("orderId", order.get("id"));
+            response.put("amount", order.get("amount"));
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.singletonMap("error", "Failed to create order."));
+        }
+    }
+}
+-----------------------------
+package Food_Orders.Controller;
+
+import Food_Orders.Config.PaymentWebSocketHandler;
+import Food_Orders.Entity.Payment;
+import Food_Orders.Entity.PaymentStatus;
+import Food_Orders.Exception.ErrorResponse;
+import Food_Orders.Service.PaymentServices;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/payments")
+@Validated
+public class PaymentController {
+
+    private static final Logger logger = LoggerFactory.getLogger(PaymentController.class);
+
+    @Autowired
+    private PaymentServices paymentServices;
+
+    @Autowired
+    private PaymentWebSocketHandler webSocketHandler;
+
+
+    @PostMapping("/add")
+    public ResponseEntity<Payment> addPayment(@Validated @RequestBody Payment payment) {
+        Payment createdPayment = paymentServices.addPayment(payment);
+        return new ResponseEntity<>(createdPayment, HttpStatus.CREATED);
+    }
+
+
+    @GetMapping("/all")
+    public ResponseEntity<List<Payment>> getAllPayments() {
+        List<Payment> payments = paymentServices.getAllPayments();
+        return new ResponseEntity<>(payments, HttpStatus.OK);
+    }
+
+
+    @GetMapping("/transaction/{transactionId}")
+    public ResponseEntity<?> getPaymentByTransactionId(@PathVariable String transactionId) {
+        Payment payment = paymentServices.getPaymentByTransactionId(transactionId);
+        if (payment == null) {
+            logger.warn("Payment with transaction ID {} not found.", transactionId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse("Payment with transaction ID " + transactionId + " not found.", HttpStatus.NOT_FOUND.value()));
+        }
+        return new ResponseEntity<>(payment, HttpStatus.OK);
+    }
+
+
+    @PutMapping("/transaction/{transactionId}/status")
+    public ResponseEntity<?> updatePaymentStatus(@PathVariable String transactionId, @Validated @RequestBody PaymentStatus paymentStatus) {
+        Payment updatedPayment = paymentServices.updatePaymentStatus(transactionId, paymentStatus.getStatus());
+        if (updatedPayment == null) {
+            logger.warn("Failed to update payment status for transaction ID {}", transactionId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse("Payment with transaction ID " + transactionId + " not found.", HttpStatus.NOT_FOUND.value()));
+        }
+
+        // Attempt to send WebSocket message and handle potential errors
+        webSocketHandler.sendMessage(transactionId, paymentStatus.getStatus());
+
+        return ResponseEntity.ok(updatedPayment);
+    }
+
+    @GetMapping("/status/{transactionId}")
+    public ResponseEntity<?> getPaymentStatus(@PathVariable String transactionId) {
+        PaymentStatus paymentStatus = paymentServices.getPaymentStatus(transactionId);
+        if (paymentStatus == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse("Payment status for transaction ID " + transactionId + " not found.", HttpStatus.NOT_FOUND.value()));
+        }
+        return ResponseEntity.ok(paymentStatus);
+    }
+}
+----------------------------
+package Food_Orders.Controller;
+
+
+import Food_Orders.Entity.Restaurant;
+import Food_Orders.Repository.RestaurantRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/restaurants")
+@CrossOrigin(origins = "http://localhost:3000")
+public class RestaurantController {
+
+    @Autowired
+    private RestaurantRepository restaurantRepository;
+
+
+    @GetMapping("/all")
+    public ResponseEntity<List<Restaurant>> getAllRestaurants() {
+        return ResponseEntity.ok(restaurantRepository.findAll());
+    }
+
+    // Get a restaurant by ID
+    @GetMapping("/{id}")
+    public ResponseEntity<Restaurant> getRestaurantById(@PathVariable Long id) {
+        return restaurantRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+
+    @PostMapping("/create")
+    public ResponseEntity<Restaurant> createRestaurant(
+            @RequestParam("name") String name,
+            @RequestParam("description") String description,
+            @RequestParam("phoneNumber") String phoneNumber,
+            @RequestParam("openingHours") String openingHours,
+            @RequestParam("imageUrl") String imageUrl) {
+        try {
+            Restaurant restaurant = new Restaurant();
+            restaurant.setName(name);
+            restaurant.setDescription(description);
+            restaurant.setPhoneNumber(phoneNumber);
+            restaurant.setOpeningHours(openingHours);
+            restaurant.setImageUrl(imageUrl);
+
+            Restaurant savedRestaurant = restaurantRepository.save(restaurant);
+            return ResponseEntity.ok(savedRestaurant);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Restaurant> updateRestaurant(@PathVariable Long id, @RequestBody Restaurant updatedRestaurant) {
+        return restaurantRepository.findById(id)
+                .map(restaurant -> {
+                    restaurant.setName(updatedRestaurant.getName());
+                    restaurant.setDescription(updatedRestaurant.getDescription());
+                    restaurant.setPhoneNumber(updatedRestaurant.getPhoneNumber());
+                    restaurant.setOpeningHours(updatedRestaurant.getOpeningHours());
+                    restaurant.setImageUrl(updatedRestaurant.getImageUrl());
+                    Restaurant savedRestaurant = restaurantRepository.save(restaurant);
+                    return ResponseEntity.ok(savedRestaurant);
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Object> deleteRestaurant(@PathVariable Long id) {
+        return restaurantRepository.findById(id)
+                .map(restaurant -> {
+                    restaurantRepository.delete(restaurant);
+                    return ResponseEntity.noContent().build();
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+}
+
+------------------------------------------
+package Food_Orders.Controller;
+
+import Food_Orders.Entity.User;
+import Food_Orders.Service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/users")
+@CrossOrigin(origins = "http://localhost:3000")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    @PostMapping("/create")
+    public ResponseEntity<User> createUser(@RequestBody User user) {
+        User createdUser = userService.createUser(user);
+        return ResponseEntity.ok(createdUser);
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<User>> getAllUsers() {
+        List<User> users = userService.getAllUsers();
+        return ResponseEntity.ok(users);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+        User user = userService.getUserById(id);
+        return ResponseEntity.ok(user);
+    }
+
+    @PutMapping("/update/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
+        User updatedUser = userService.updateUser(id, userDetails);
+        return ResponseEntity.ok(updatedUser);
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<String> deleteUser(@PathVariable Long id) {
+        userService.deleteUser(id);
+        return ResponseEntity.ok("User deleted successfully!");
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<User> login(@RequestBody User user) {
+        User existingUser = userService.findByEmail(user.getEmail());
+        if (existingUser != null && existingUser.getPassword().equals(user.getPassword())) {
+            return ResponseEntity.ok(existingUser);
+        }
+        return ResponseEntity.status(401).body(null);
+    }
+}
+---------------------------------Exceptions-------------------
+package Food_Orders.Exception;
+
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
+public class ErrorResponse {
+    private String message;
+    private int statusCode;
+
+    public ErrorResponse(String message, int statusCode) {
+        this.message = message;
+        this.statusCode = statusCode;
+    }
+
+
+}
+-----------------------
+package Food_Orders.Exception;
+
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.context.request.WebRequest;
+
+import java.io.IOException;
+import java.util.stream.Collectors;
+
+@ControllerAdvice
+public class GlobalExceptionHandler {
+
+    // Handle IOException
+    @ExceptionHandler(IOException.class)
+    public ResponseEntity<ErrorResponse> handleIOException(IOException ex, WebRequest request) {
+        ErrorResponse error = new ErrorResponse("Internal server error: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGenericException(Exception ex, WebRequest request) {
+        ErrorResponse error = new ErrorResponse("An error occurred: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        String errorMessage = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(FieldError::getDefaultMessage)
+                .collect(Collectors.joining(", "));
+        ErrorResponse error = new ErrorResponse("Validation error: " + errorMessage, HttpStatus.BAD_REQUEST.value());
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+}
+-------------------
+package Food_Orders.Exception;
+
+public class ResourceNotFoundException extends RuntimeException{
+    public ResourceNotFoundException(String fullstack,Object...args){
+        super(String.format(fullstack,args));
+    }
+}
+-----------------------REPOSITORY-----------
+package Food_Orders.Repository;
+
+import Food_Orders.Entity.Address;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface AddressRepository extends JpaRepository<Address,Long> {
+}
+------------------------------------
+package Food_Orders.Repository;
+
+import Food_Orders.Entity.CartItem;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface CartItemRepository extends JpaRepository<CartItem,Long> {
+
+    List<CartItem> findByCart_Id(Long cartId);
+}
+--------------
+package Food_Orders.Repository;
+
+import Food_Orders.Entity.Payment;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface PaymentRepository extends JpaRepository<Payment, Long> {
+    Payment findByTransactionId(String transactionId);
+}
+-----------------
+package Food_Orders.Repository;
+
+import Food_Orders.Entity.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface UserRepository extends JpaRepository<User, Long> {
+    User findByEmail(String email);  // Optional: Find by email for login
+}
+-----------------------SERVICES------------------
+package Food_Orders.Service;
+
+import Food_Orders.Entity.Address;
+import Food_Orders.Repository.AddressRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class AddressService {
+
+    @Autowired
+    private AddressRepository addressRepository;
+
+    public Address saveAddress(Address address) {
+        return addressRepository.save(address);
+    }
+
+    public List<Address> getAllAddresses() {
+        return addressRepository.findAll();
+    }
+
+    public Optional<Address> getAddressById(Long id) {
+        return addressRepository.findById(id);
+    }
+
+    public void deleteAddress(Long id) {
+        addressRepository.deleteById(id);
+    }
+}
+----------------------
+package Food_Orders.Service;
+
+
+import Food_Orders.Entity.Cart;
+import Food_Orders.Repository.CartRepository;
+import Food_Orders.Entity.CartItem;
+import Food_Orders.Repository.CartItemRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class CartItemService {
+
+    @Autowired
+    private CartItemRepository cartItemRepository;
+
+    @Autowired
+    private CartRepository cartRepository;
+
+    public Cart saveCart(Cart cart) {
+        return cartRepository.save(cart);
+    }
+    public Optional<Cart> getCartById(Long cartId) {
+        return cartRepository.findById(cartId);
+    }
+    public List<Cart> getAllCarts() {
+        return cartRepository.findAll();
+    }
+    public Cart updateCart(Cart cart) {
+        return cartRepository.save(cart);
+    }
+    public void deleteCart(Long cartId) {
+        cartRepository.deleteById(cartId);
+    }
+}
+----------------------------
+package Food_Orders.Service;
+
+import Food_Orders.Entity.Payment;
+import Food_Orders.Entity.PaymentStatus;
+import Food_Orders.Repository.PaymentRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class PaymentServices {
+
+    @Autowired
+    private PaymentRepository paymentRepository;
+
+    public Payment addPayment(Payment payment) {
+        return paymentRepository.save(payment);
+    }
+
+    public List<Payment> getAllPayments() {
+        return paymentRepository.findAll();
+    }
+
+    public Payment getPaymentByTransactionId(String transactionId) {
+        return paymentRepository.findByTransactionId(transactionId);
+    }
+
+
+    public Payment updatePaymentStatus(String transactionId, String status) {
+        Payment payment = getPaymentByTransactionId(transactionId);
+        if (payment != null) {
+            payment.setStatus(status);
+            return paymentRepository.save(payment);
+        }
+        return null;
+    }
+
+    public PaymentStatus getPaymentStatus(String transactionId) {
+        Payment payment = getPaymentByTransactionId(transactionId);
+        if (payment != null) {
+            return new PaymentStatus(payment.getTransactionId(), payment.getStatus());
+        }
+        return null;
+    }
+}
+-------------------
+package Food_Orders.Service;
+
+import Food_Orders.Entity.User;
+import Food_Orders.Repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class UserService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+
+    public User createUser(User user) {
+        if (user.getRole() == null || user.getRole().isEmpty()) {
+            user.setRole("CUSTOMER"); // Default role
+        }
+        return userRepository.save(user);
+    }
+
+
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+
+    public User getUserById(Long id) {
+        Optional<User> user = userRepository.findById(id);
+        return user.orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+
+    public User updateUser(Long id, User userDetails) {
+        User user = getUserById(id);
+        user.setFirstName(userDetails.getFirstName());
+        user.setLastName(userDetails.getLastName());
+        user.setEmail(userDetails.getEmail());
+        user.setPassword(userDetails.getPassword());
+        user.setRole(userDetails.getRole());
+        return userRepository.save(user);
+    }
+
+
+    public void deleteUser(Long id) {
+        userRepository.deleteById(id);
+    }
+
+
+    public User findByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+}
+------------------------------
