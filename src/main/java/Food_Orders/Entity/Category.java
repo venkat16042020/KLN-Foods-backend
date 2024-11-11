@@ -22,4 +22,10 @@ public class Category {
 
 
     private String imageUrl;
+
+    public Category(String name, String description, String imageUrl) {
+        this.name = name;
+        this.description = description;
+        this.imageUrl = imageUrl;
+    }
 }

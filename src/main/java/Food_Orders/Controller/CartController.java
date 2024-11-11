@@ -13,10 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api")
@@ -35,9 +32,12 @@ public class CartController {
     @PostMapping("/placeOrder")
     public ResponseEntity<Map<String, String>> placeOrder(@RequestBody OrderRequest orderRequest) {
         try {
-            // Create and save cart
+
             Cart cart = new Cart();
             cart.setTotalAmount(orderRequest.getTotalAmount());
+            cart.setPhoneNumber(orderRequest.getPhoneNumber());
+            cart.setEmail(orderRequest.getEmail());
+            cart.setDate(orderRequest.getDate());
             Cart savedCart = cartRepository.save(cart);
 
             // Save cart items
@@ -60,14 +60,13 @@ public class CartController {
             address.setCity(orderRequest.getAddress().getCity());
             address.setState(orderRequest.getAddress().getState());
             address.setZipCode(orderRequest.getAddress().getZipCode());
-            address.setPhoneNumber(orderRequest.getAddress().getPhoneNumber());
             addressRepository.save(address);
 
             // Prepare a JSON response message
             Map<String, String> response = new HashMap<>();
             response.put("message", "Order placed successfully.");
 
-            return ResponseEntity.ok(response);  // Return a JSON response
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             e.printStackTrace();
             Map<String, String> errorResponse = new HashMap<>();
@@ -87,13 +86,31 @@ public class CartController {
         Optional<Cart> order = cartRepository.findById(id);
         return order.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
+    @GetMapping("/orders/byEmail")
+    public ResponseEntity<List<Cart>> getOrdersByEmail(@RequestParam String email) {
+        try {
+            List<Cart> orders = cartRepository.findByEmail(email);
+            if (orders.isEmpty()) {
+                // Instead of 404, return 200 OK with an empty list
+                return ResponseEntity.ok(Collections.emptyList());
+            }
+            return ResponseEntity.ok(orders);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.emptyList());
+        }
+    }
+
+
 
     @PutMapping("/orders/{id}")
     public ResponseEntity<Cart> updateOrder(@PathVariable Long id, @RequestBody Cart updatedCart) {
         return cartRepository.findById(id)
                 .map(cart -> {
                     cart.setTotalAmount(updatedCart.getTotalAmount());
-                    // Update other fields as needed
+                    cart.setPhoneNumber(updatedCart.getPhoneNumber());
+                    cart.setEmail(updatedCart.getEmail());
+                    cart.setDate(updatedCart.getDate());
                     Cart savedCart = cartRepository.save(cart);
                     return ResponseEntity.ok(savedCart);
                 })
