@@ -1,0 +1,22 @@
+--------------GIT common commands-------------
+git add .
+git add abc.txt
+git commit -m 'KLN-10001 updated abc file'
+git push origin abc
+git clone https://abcd.com/abcRepo.git
+git clone -b abcd_branch https://abcd.com/abcRepo.git
+git checkout abcdef_branch
+git branch -a
+git reset --hard HEAD
+git pull origin xyz_branch
+------------PR flow-----------
+Create pull request for the develop branch
+add reviewers
+approve or reject as reviewer.
+If all approvers approve it, merge the PR to target_branch
+If any approver reject it, work on the review comments.
+    Then commit the clean code without any merge conflicts.
+Again approver will review it and approve if he is okay with the changes.
+If all approvers approve it, merge the PR to target_branch.
+Before going to create pull request get the latest code from target branch
+and then get the latest code into your working(development) branch.
