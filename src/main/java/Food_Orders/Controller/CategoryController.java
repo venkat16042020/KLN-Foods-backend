@@ -68,7 +68,7 @@ public class CategoryController {
         if (category.isPresent()) {
             return ResponseEntity.ok(category.get());
         } else {
-            logger.warn("Category with ID {} not found", id);
+            logger.warn("Category with ID {} is not found", id);
             return ResponseEntity.notFound().build();
         }
     }
