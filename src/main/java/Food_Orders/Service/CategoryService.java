@@ -13,7 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 @Service
 public class CategoryService {
-    private CategoryRepository categoryRepository;
+    private final CategoryRepository categoryRepository;
 
     public void saveCategoriesToDatabase(MultipartFile multipartFile) {
         if (ExcelUploadService.isValidExcelFile(multipartFile)) {
@@ -33,7 +33,7 @@ public class CategoryService {
     public List<Category> exportCategoriesToExcel(HttpServletResponse response) throws IOException {
         List<Category> categories = categoryRepository.findAll();
         ExcelExportUtils excelExportUtils = new ExcelExportUtils(categories);
-        excelExportUtils.exportDataToexcel(response);
+        excelExportUtils.exportDataToExcel(response);
         return categories;
     }
 }

@@ -27,7 +27,7 @@ public class Address {
 
 
     @OneToOne
-    @JoinColumn(name = "cart_id") // Foreign key
+    @JoinColumn(name = "cart_id")
     private Cart cart;
 
 

@@ -81,13 +81,13 @@ public class ExcelExportUtils {
             createCell(row,columnCount++,category.getImageUrl(),style);
         }
     }
-public void exportDataToexcel(HttpServletResponse response ) throws IOException {
+    public void exportDataToExcel(HttpServletResponse response ) throws IOException {
         createHeaderRow();
         writeCategoryData();
-    ServletOutputStream outputStream = response.getOutputStream();
-    workbook.write(outputStream);
-    workbook.close();
-    outputStream.close();
+        ServletOutputStream outputStream = response.getOutputStream();
+        workbook.write(outputStream);
+        workbook.close();
+        outputStream.close();
     }
 
 

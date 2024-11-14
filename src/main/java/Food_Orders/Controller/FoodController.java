@@ -2,10 +2,14 @@ package Food_Orders.Controller;
 
 import Food_Orders.Entity.Food;
 import Food_Orders.Repository.FoodRepository;
+import Food_Orders.Service.FoodService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,9 +19,14 @@ import java.util.Optional;
 @CrossOrigin(origins = "http://localhost:3000")
 public class FoodController {
 
-    @Autowired
-    private FoodRepository foodRepository;
+    private final FoodRepository foodRepository;
+    private final FoodService foodService;
 
+    @Autowired
+    public FoodController(FoodService foodService, FoodRepository foodRepository) {
+        this.foodService = foodService;
+        this.foodRepository = foodRepository;
+    }
 
     @PostMapping("/create")
     public ResponseEntity<Food> createFood(@RequestBody Food food) {
@@ -30,7 +39,6 @@ public class FoodController {
         }
     }
 
-
     @GetMapping("/all")
     public ResponseEntity<List<Food>> getAllFoods() {
         try {
@@ -41,7 +49,6 @@ public class FoodController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
-
 
     @GetMapping("/{id}")
     public ResponseEntity<Object> getFoodById(@PathVariable Long id) {
@@ -57,7 +64,6 @@ public class FoodController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error retrieving food item: " + e.getMessage());
         }
     }
-
 
     @PutMapping("/update/{id}")
     public ResponseEntity<?> updateFood(@PathVariable Long id, @RequestBody Food updatedFood) {
@@ -86,7 +92,6 @@ public class FoodController {
         }
     }
 
-
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<?> deleteFood(@PathVariable Long id) {
         try {
@@ -102,4 +107,25 @@ public class FoodController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deleting food item: " + e.getMessage());
         }
     }
+    @GetMapping("/Export")
+    public void exportToExcel(HttpServletResponse response) throws IOException {
+        response.setContentType("application/octet-stream");
+        String headerKey = "Content-Disposition";
+        String headerValue = "attachment; filename=Foods_Information.xlsx";
+        response.setHeader(headerKey, headerValue);
+        foodService.exportFoodsToExcel(response);
+    }
+    @PostMapping("/upload")
+    public ResponseEntity<String> uploadFoods(@RequestParam("file") MultipartFile file) {
+        try {
+            System.out.println("Received request to upload file: " + file.getOriginalFilename());
+            foodService.saveFoodsToDatabase(file);
+            return ResponseEntity.status(HttpStatus.CREATED).body("File uploaded and data saved successfully.");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error uploading file: " + e.getMessage());
+        }
+    }
+
+
 }
