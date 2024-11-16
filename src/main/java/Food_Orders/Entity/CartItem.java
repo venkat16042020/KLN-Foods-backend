@@ -1,30 +1,29 @@
 package Food_Orders.Entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "CartItems")
+@Data
+@Getter
+@Setter
+@Table(name = "CartItem")
 public class CartItem {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "cart_item_id")
     private Long id;
 
-    @ManyToOne
+    private String name;
+    private double price;
+    private int quantity;
+    private double totalGST;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cart_id")
     @JsonBackReference
     private Cart cart;
-
-    private String name;
-    private Double price;
-    private Integer quantity;
-    private Double totalGST;
 }

@@ -1,19 +1,17 @@
 package Food_Orders.Dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Data
+@Setter
+@Getter
 
 public class CartItemDto {
+    private Long id;
     private String name;
-    private Double price;
-    private Integer quantity;
-    private Double totalGST;
-
-
+    private double price;
+    private int quantity;
+    private double totalGST;
 }
-
