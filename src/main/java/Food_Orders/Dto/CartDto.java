@@ -20,6 +20,8 @@ public class CartDto {
     private String phoneNumber;
     private String email;
     private Date date;
+    private double totalPrice;
+    private  double sumAllGST;
     private AddressDto address;
     private List<CartItemDto> cartItems;
 }

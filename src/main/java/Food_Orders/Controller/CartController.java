@@ -8,15 +8,13 @@ import Food_Orders.Entity.CartItem;
 import Food_Orders.Repository.AddressRepository;
 import Food_Orders.Repository.CartItemRepository;
 import Food_Orders.Repository.CartRepository;
-import Food_Orders.Service.CartExcelExportUtils;
-import Food_Orders.Service.CartService; // Import the CartService
+import Food_Orders.Service.CartService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.util.*;
 
@@ -40,25 +38,42 @@ public class CartController {
     @PostMapping("/placeOrder")
     public ResponseEntity<Map<String, String>> placeOrder(@RequestBody OrderRequest orderRequest) {
         try {
+            // Create a new Cart
             Cart cart = new Cart();
             cart.setTotalAmount(orderRequest.getTotalAmount());
             cart.setPhoneNumber(orderRequest.getPhoneNumber());
             cart.setEmail(orderRequest.getEmail());
             cart.setDate(orderRequest.getDate());
-            Cart savedCart = cartRepository.save(cart);
 
-            // Save cart items
+            double sumAllGST = 0.0; // Accumulator for GST
+            double totalPrice = 0.0; // Accumulator for total price
+
+            // Save cart items and calculate sumAllGST and totalPrice
+            List<CartItem> cartItems = new ArrayList<>();
             for (CartItemDto itemDto : orderRequest.getItems()) {
                 CartItem cartItem = new CartItem();
-                cartItem.setCart(savedCart);
+                cartItem.setCart(cart);
                 cartItem.setName(itemDto.getName());
                 cartItem.setPrice(itemDto.getPrice());
                 cartItem.setQuantity(itemDto.getQuantity());
                 cartItem.setTotalGST(itemDto.getTotalGST());
-                cartItemRepository.save(cartItem);
+
+                // Add to sumAllGST and totalPrice
+                sumAllGST += itemDto.getTotalGST() * itemDto.getQuantity(); // Adjust to account for quantity
+                totalPrice += itemDto.getPrice() * itemDto.getQuantity();
+
+                cartItems.add(cartItem);
             }
 
-            // Save address
+            // Set sumAllGST and totalPrice in the Cart entity
+            cart.setCartItems(cartItems);
+            cart.setSumAllGST(sumAllGST);
+            cart.setTotalPrice(totalPrice);
+
+            // Save the Cart
+            Cart savedCart = cartRepository.save(cart);
+
+            // Save the address
             Address address = new Address();
             address.setCart(savedCart);
             address.setHouseNumber(orderRequest.getAddress().getHouseNumber());
@@ -69,11 +84,11 @@ public class CartController {
             address.setZipCode(orderRequest.getAddress().getZipCode());
             addressRepository.save(address);
 
-            // Prepare a JSON response message
+            // Prepare a success response
             Map<String, String> response = new HashMap<>();
             response.put("message", "Order placed successfully.");
-
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
             e.printStackTrace();
             Map<String, String> errorResponse = new HashMap<>();
@@ -81,6 +96,8 @@ public class CartController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
+
+
 
     @GetMapping("/orders")
     public ResponseEntity<List<Cart>> getAllOrders() {

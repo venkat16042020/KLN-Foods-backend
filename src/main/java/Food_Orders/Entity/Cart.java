@@ -43,4 +43,9 @@ public class Cart {
     @JsonManagedReference
     public Address address;
 
+    private double totalPrice;
+
+    private double sumAllGST;
+
+
 }
