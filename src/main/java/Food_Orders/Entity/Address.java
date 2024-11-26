@@ -1,17 +1,16 @@
 package Food_Orders.Entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Data
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "Addresses")
+@Data
 public class Address {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "address_id")
@@ -25,10 +24,8 @@ public class Address {
     private String zipCode;
 
 
-
-    @OneToOne
-    @JoinColumn(name = "cart_id") // Foreign key
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "cart_id")
+    @JsonBackReference
     private Cart cart;
-
-
 }

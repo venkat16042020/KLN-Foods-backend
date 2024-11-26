@@ -2,7 +2,7 @@ package Food_Orders.Controller;
 
 import Food_Orders.Entity.Category;
 import Food_Orders.Repository.CategoryRepository;
-import Food_Orders.Service.ExcelCategoryService;
+import Food_Orders.Service.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -22,13 +23,16 @@ public class CategoryController {
 
     private static final Logger logger = LoggerFactory.getLogger(CategoryController.class);
 
+    private final CategoryService categoryService;
+    @Autowired
+    public CategoryController(CategoryService categoryService, CategoryRepository categoryRepository) {
+        this.categoryService = categoryService;
+        this.categoryRepository = categoryRepository;
+    }
+
     @Autowired
     private CategoryRepository categoryRepository;
 
-    @Autowired
-    private ExcelCategoryService excelCategoryService;
-
-    // Create a new category
     @PostMapping("/create")
     public ResponseEntity<Category> createCategory(
             @RequestParam("name") String name,
@@ -45,7 +49,6 @@ public class CategoryController {
         }
     }
 
-    // Get all categories
     @GetMapping("/all")
     public ResponseEntity<List<Category>> getAllCategories() {
         logger.info("Fetching all categories...");
@@ -58,7 +61,6 @@ public class CategoryController {
         }
     }
 
-    // Get a category by ID
     @GetMapping("/{id}")
     public ResponseEntity<Category> getCategoryById(@PathVariable Long id) {
         logger.info("Fetching category with ID: {}", id);
@@ -66,12 +68,11 @@ public class CategoryController {
         if (category.isPresent()) {
             return ResponseEntity.ok(category.get());
         } else {
-            logger.warn("Category with ID {} not found", id);
+            logger.warn("Category with ID {} is not found", id);
             return ResponseEntity.notFound().build();
         }
     }
 
-    // Delete a category
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
         logger.info("Attempting to delete category with ID: {}", id);
@@ -84,24 +85,20 @@ public class CategoryController {
             return ResponseEntity.notFound().build();
         }
     }
-
-    // Import categories from Excel file
     @PostMapping("/import")
-    public ResponseEntity<String> importCategories(@RequestParam("file") MultipartFile file) {
-        try {
-            // Process the file (this should call a service to process the Excel file)
-            excelCategoryService.importCategoriesFromExcel(file);
-            return ResponseEntity.ok("Categories imported successfully");
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Failed to import categories: " + e.getMessage());
-        }
+    public ResponseEntity<?> uploadCategoryData(@RequestParam("file") MultipartFile file ) {
+        this.categoryService.saveCategoriesToDatabase(file);
+        return ResponseEntity
+                .ok(Map.of("Message","Categories data uploaded and saved to database successfully"));
     }
 
-    // Export categories to Excel file
-    @GetMapping("/export")
-    public void exportCategories(HttpServletResponse response) throws IOException {
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment; filename=categories.xlsx");
-        excelCategoryService.exportCategoriesToExcel(response);
+    @GetMapping("/Export")
+    public void exportToExcel(HttpServletResponse response) throws IOException {
+        response.setContentType("application/octet-stream");
+        String headerKey = "Content-Disposition";
+        String headerValue = "attachment; filename=Customers_Information.xlsx";
+        response.setHeader(headerKey, headerValue);
+        categoryService.exportCategoriesToExcel(response);
     }
+
 }
