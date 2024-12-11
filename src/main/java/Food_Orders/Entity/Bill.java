@@ -21,6 +21,6 @@ public class Bill {
     private double totalPrice;
     private int quantity;
     private double totalAmount;
-    private double sumAllGST; // Correct property name
-    private String phoneNumber; // Correct property name
+    private double sumAllGST;
+     
 }

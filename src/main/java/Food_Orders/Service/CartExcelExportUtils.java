@@ -95,14 +95,12 @@ public class CartExcelExportUtils {
             Row row = sheet.createRow(rowCount++);
             int columnCount = 0;
 
-            // Cart fields
             createCell(row, columnCount++, cart.getId(), style);
             createCell(row, columnCount++, cart.getTotalAmount(), style);
             createCell(row, columnCount++, cart.getPhoneNumber(), style);
             createCell(row, columnCount++, cart.getEmail(), style);
             createCell(row, columnCount++, cart.getDate(), style);
 
-            // Address fields (if available)
             Address address = cart.getAddress();
             if (address != null) {
                 createCell(row, columnCount++, address.getId(), style);

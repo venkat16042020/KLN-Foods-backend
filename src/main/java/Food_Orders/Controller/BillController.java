@@ -19,7 +19,6 @@ public class BillController {
 
     @PostMapping("/add")
     public Bill createBill(@RequestBody Bill bill) {
-        // Save the bill object
         return billRepository.save(bill);
     }
 
@@ -48,7 +47,6 @@ public class BillController {
             bill.setQuantity(billDetails.getQuantity());
             bill.setTotalAmount(billDetails.getTotalAmount());
             bill.setSumAllGST(billDetails.getSumAllGST());
-            bill.setPhoneNumber(billDetails.getPhoneNumber());
             Bill updatedBill = billRepository.save(bill);
             return ResponseEntity.ok(updatedBill);
         } else {
